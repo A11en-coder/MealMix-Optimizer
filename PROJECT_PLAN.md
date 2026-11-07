@@ -55,17 +55,17 @@ Independent exhaustive enumeration of all bounded integer combinations found a u
 
 ## Technical foundation — provisional
 
-React/TypeScript browser UI, Python API, and a Python integer-programming solver are candidates because the solver is the central learning goal. Choose the exact libraries and local persistence method after inspecting setup. The browser collects inputs and renders results; the server validates the scenario, builds and solves the model, and returns a typed result. Persist scenarios only after the solve flow is verified. Keep solver logic independent of HTTP handling so it can be tested directly.
+React/TypeScript browser UI, a FastAPI Python server, RSOME modeling, and its Gurobi solver are the current choices. Allen selected RSOME and `grb_solver` based on his course experience. The browser collects inputs and renders results; the server validates the scenario, builds and solves the model, and returns a typed result. Persist scenarios only after the solve flow is verified. Keep solver logic independent of HTTP handling so it can be tested directly. The local Python project uses uv.
 
 ## Feature roadmap and status
 
 | Order | Feature | Current cycle step | Status |
 | --- | --- | --- | --- |
-| 1 | Solve one predefined scenario and show a valid result | Step 2 — Design the data and interfaces | Step 1 defined; numerical example pending |
+| 1 | Solve one predefined scenario and show a valid result | Step 5 — Connect frontend data access | Model and endpoint implemented; Postman happy path verified by Allen; response now includes resource usage; browser flow pending |
 | 2 | Edit scenario inputs and handle invalid/infeasible cases | Step 1 — Define the feature | Planned |
 | 3 | Save and reopen scenarios | Step 1 — Define the feature | Planned |
 | 4 | Review full app, usability, and one known-optimum test | Phase 5 | Planned |
 
 ## Checkpoints and next task
 
-No application code or runtime checks yet. Phase 2 behavior brief drafted on 2026-11-07. Allen selected chicken, beef, and seafood meals and prep labour, cooking-line, and packaging-line minutes. On 2026-11-08, the illustrative model was solved by independent enumeration as recorded above. Next: design Feature 1's request/response and results UI, then inspect setup before choosing libraries.
+Phase 2 behavior brief drafted on 2026-11-07. Allen selected chicken, beef, and seafood meals and prep labour, cooking-line, and packaging-line minutes. On 2026-11-08, the illustrative model was solved by independent enumeration as recorded above. Allen then set up a FastAPI server with uv, wrote the RSOME/Gurobi model, connected `POST /api/optimize`, and reported the expected result in Postman. Code inspection confirms the route calls the solver and returns quantities, margin, and resource usage. The assistant's direct local socket check was blocked by workspace permissions, so Postman behavior is user-reported. Feature 1 has no persistence (not applicable: the scenario is predefined). Next: create the React/TypeScript client and connect the Run action. Later consolidate duplicated numerical coefficients in `solve_sample` and `calculate_usage` before editable scenarios are built; changing only one copy would show incorrect usage. Failure handling will be tested when user-editable scenarios can be infeasible.

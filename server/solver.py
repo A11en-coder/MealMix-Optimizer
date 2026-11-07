@@ -25,8 +25,21 @@ def solve_sample():
 
     # solve the model using Gurobi
     model.solve(grb)
-    
+
     return meals.get(), model.get()
 
+def calculate_usage(chicken, beef, seafood):
+    # calculate the total preparation, cooking, and packaging time used
+    prep_time = 6 * chicken + 8 * beef + 7 * seafood
+    cook_time = 10 * chicken + 12 * beef + 8 * seafood
+    pack_time = 2 * chicken + 2 * beef + 3 * seafood
+
+    return {
+        "prepTime": prep_time,
+        "cookTime": cook_time,
+        "packTime": pack_time,
+    }
+
 if __name__ == "__main__":
+    print(calculate_usage(13, 39, 30))
     print(solve_sample())
