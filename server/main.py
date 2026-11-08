@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel, Field, model_validator
-from solver import solve_sample, calculate_usage
+from solver import RESOURCE_MINUTES, solve_sample, calculate_usage
 
 app = FastAPI()
 
@@ -28,11 +28,33 @@ class Margins(BaseModel):
     seafood: int = Field(ge=0, strict=True)
 
 
+class MealResourceMinutes(BaseModel):
+    prep: int = Field(ge=0, strict=True)
+    cooking: int = Field(ge=0, strict=True)
+    packaging: int = Field(ge=0, strict=True)
+
+
+class ResourceMinutes(BaseModel):
+    chicken: MealResourceMinutes
+    beef: MealResourceMinutes
+    seafood: MealResourceMinutes
+
+
+def default_resource_minutes() -> ResourceMinutes:
+    return ResourceMinutes.model_validate(
+        {
+            meal: dict(zip(("prep", "cooking", "packaging"), minutes))
+            for meal, minutes in zip(("chicken", "beef", "seafood"), RESOURCE_MINUTES)
+        }
+    )
+
+
 class OptimizeRequest(BaseModel):
     capacities: Capacities
     maxDemand: MaxDemand
     minDemand: MinDemand
     margins: Margins
+    resourceMinutes: ResourceMinutes = Field(default_factory=default_resource_minutes)
 
     @model_validator(mode="after")
     def minimums_do_not_exceed_maximums(self):
@@ -48,6 +70,14 @@ def optimize(request: OptimizeRequest):
     max_demand = request.maxDemand
     min_demand = request.minDemand
     margins = request.margins
+    resource_minutes = tuple(
+        (meal.prep, meal.cooking, meal.packaging)
+        for meal in (
+            request.resourceMinutes.chicken,
+            request.resourceMinutes.beef,
+            request.resourceMinutes.seafood,
+        )
+    )
     solution = solve_sample(
         capacities.prep,
         capacities.cooking,
@@ -55,6 +85,7 @@ def optimize(request: OptimizeRequest):
         (max_demand.chicken, max_demand.beef, max_demand.seafood),
         (margins.chicken, margins.beef, margins.seafood),
         (min_demand.chicken, min_demand.beef, min_demand.seafood),
+        resource_minutes,
     )
     if solution is None:
         return {
@@ -64,7 +95,7 @@ def optimize(request: OptimizeRequest):
 
     quantities, total_margin = solution
     chicken, beef, seafood = (int(round(value)) for value in quantities)
-    usage = calculate_usage(chicken, beef, seafood)
+    usage = calculate_usage(chicken, beef, seafood, resource_minutes)
 
     return {
         "status": "optimal",

@@ -182,3 +182,19 @@
     border-right-color: var(--border);
   }
 }
+
+.resource-minute-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+
+.resource-minute-groups fieldset {
+  min-width: 0;
+}
+
+.resource-minute-groups input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+}
