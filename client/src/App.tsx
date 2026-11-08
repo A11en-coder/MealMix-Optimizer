@@ -7,6 +7,7 @@ type ResourceUsage = {
 };
 
 type CapacityKey = "prep" | "cooking" | "packaging";
+type MealKey = "chicken" | "beef" | "seafood";
 
 function App() {
   // define the meal plan data structure
@@ -33,9 +34,25 @@ function App() {
     cooking: "900",
     packaging: "240",
   });
+  const [demandInputs, setDemandInputs] = useState<Record<MealKey, string>>({
+    chicken: "50",
+    beef: "40",
+    seafood: "30",
+  });
+  const [marginInputs, setMarginInputs] = useState<Record<MealKey, string>>({
+    chicken: "5",
+    beef: "7",
+    seafood: "8",
+  });
 
   const updateCapacity = (key: CapacityKey, value: string) => {
     setCapacityInputs((current) => ({ ...current, [key]: value }));
+  };
+  const updateDemand = (key: MealKey, value: string) => {
+    setDemandInputs((current) => ({ ...current, [key]: value }));
+  };
+  const updateMargin = (key: MealKey, value: string) => {
+    setMarginInputs((current) => ({ ...current, [key]: value }));
   };
 
   // create a function to fetch the meal plan data from the backend
@@ -43,10 +60,14 @@ function App() {
     event.preventDefault();
     if (isLoading) return;
     setError(null);
-    const values = Object.values(capacityInputs);
+    const values = [
+      ...Object.values(capacityInputs),
+      ...Object.values(demandInputs),
+      ...Object.values(marginInputs),
+    ];
     if (values.some((value) => !/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) {
       setMealPlan(null);
-      setError("Enter a nonnegative whole number of minutes for each capacity.");
+      setError("Enter a nonnegative whole number for every capacity, demand limit, and margin.");
       return;
     }
 
@@ -55,13 +76,23 @@ function App() {
       cooking: Number(capacityInputs.cooking),
       packaging: Number(capacityInputs.packaging),
     };
+    const maxDemand = {
+      chicken: Number(demandInputs.chicken),
+      beef: Number(demandInputs.beef),
+      seafood: Number(demandInputs.seafood),
+    };
+    const margins = {
+      chicken: Number(marginInputs.chicken),
+      beef: Number(marginInputs.beef),
+      seafood: Number(marginInputs.seafood),
+    };
     setMealPlan(null);
     setIsLoading(true);
     try {
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ capacities }),
+        body: JSON.stringify({ capacities, maxDemand, margins }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -112,6 +143,66 @@ function App() {
           value={capacityInputs.packaging}
           onChange={(event) => updateCapacity("packaging", event.target.value)}
         />
+        <fieldset>
+          <legend>Maximum weekly demand (meals)</legend>
+          <label htmlFor="chicken-demand">Chicken</label>
+          <input
+            id="chicken-demand"
+            type="number"
+            min="0"
+            step="1"
+            value={demandInputs.chicken}
+            onChange={(event) => updateDemand("chicken", event.target.value)}
+          />
+          <label htmlFor="beef-demand">Beef</label>
+          <input
+            id="beef-demand"
+            type="number"
+            min="0"
+            step="1"
+            value={demandInputs.beef}
+            onChange={(event) => updateDemand("beef", event.target.value)}
+          />
+          <label htmlFor="seafood-demand">Seafood</label>
+          <input
+            id="seafood-demand"
+            type="number"
+            min="0"
+            step="1"
+            value={demandInputs.seafood}
+            onChange={(event) => updateDemand("seafood", event.target.value)}
+          />
+        </fieldset>
+        <fieldset>
+          <legend>Contribution margin per meal ($)</legend>
+          <label htmlFor="chicken-margin">Chicken</label>
+          <input
+            id="chicken-margin"
+            type="number"
+            min="0"
+            step="1"
+            value={marginInputs.chicken}
+            onChange={(event) => updateMargin("chicken", event.target.value)}
+          />
+          <label htmlFor="beef-margin">Beef</label>
+          <input
+            id="beef-margin"
+            type="number"
+            min="0"
+            step="1"
+            value={marginInputs.beef}
+            onChange={(event) => updateMargin("beef", event.target.value)}
+          />
+          <label htmlFor="seafood-margin">Seafood</label>
+          <input
+            id="seafood-margin"
+            type="number"
+            min="0"
+            step="1"
+            value={marginInputs.seafood}
+            onChange={(event) => updateMargin("seafood", event.target.value)}
+          />
+        </fieldset>
         <button type="submit" disabled={isLoading}>
           {isLoading ? "Generating…" : "Generate Meal Plan"}
         </button>

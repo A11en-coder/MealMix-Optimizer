@@ -8,7 +8,13 @@ PACKAGING_MINUTES = (2, 2, 3)
 MAX_DEMAND = (50, 40, 30)
 
 # defines a function to solve the optimization problem using Gurobi
-def solve_sample(prep_capacity=600, cooking_capacity=900, packaging_capacity=240):
+def solve_sample(
+    prep_capacity=600,
+    cooking_capacity=900,
+    packaging_capacity=240,
+    max_demand=MAX_DEMAND,
+    margins=MARGINS,
+):
     # initialize the model
     model = ro.Model()
 
@@ -16,7 +22,7 @@ def solve_sample(prep_capacity=600, cooking_capacity=900, packaging_capacity=240
     meals = model.dvar(3, vtype = "I", name = "meals")
 
     # set the objective function to maximize the profit margin
-    model.max(sum(MARGINS[i] * meals[i] for i in range(3)))
+    model.max(sum(margins[i] * meals[i] for i in range(3)))
 
     # add the constraints for preparation, cooking, and packaging time
     model.st(sum(PREP_MINUTES[i] * meals[i] for i in range(3)) <= prep_capacity)
@@ -24,9 +30,9 @@ def solve_sample(prep_capacity=600, cooking_capacity=900, packaging_capacity=240
     model.st(sum(PACKAGING_MINUTES[i] * meals[i] for i in range(3)) <= packaging_capacity)
 
     # add the constraints for the maximum number of meals that can be produced
-    model.st(meals[0] <= MAX_DEMAND[0])  # chicken
-    model.st(meals[1] <= MAX_DEMAND[1])  # beef
-    model.st(meals[2] <= MAX_DEMAND[2])  # seafood
+    model.st(meals[0] <= max_demand[0])  # chicken
+    model.st(meals[1] <= max_demand[1])  # beef
+    model.st(meals[2] <= max_demand[2])  # seafood
     model.st(meals >= 0)
 
     # solve the model using Gurobi

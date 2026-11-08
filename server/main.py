@@ -10,15 +10,35 @@ class Capacities(BaseModel):
     packaging: int = Field(ge=0, strict=True)
 
 
+class MaxDemand(BaseModel):
+    chicken: int = Field(ge=0, strict=True)
+    beef: int = Field(ge=0, strict=True)
+    seafood: int = Field(ge=0, strict=True)
+
+
+class Margins(BaseModel):
+    chicken: int = Field(ge=0, strict=True)
+    beef: int = Field(ge=0, strict=True)
+    seafood: int = Field(ge=0, strict=True)
+
+
 class OptimizeRequest(BaseModel):
     capacities: Capacities
+    maxDemand: MaxDemand
+    margins: Margins
 
 
 @app.post("/api/optimize")
 def optimize(request: OptimizeRequest):
     capacities = request.capacities
+    max_demand = request.maxDemand
+    margins = request.margins
     quantities, total_margin = solve_sample(
-        capacities.prep, capacities.cooking, capacities.packaging
+        capacities.prep,
+        capacities.cooking,
+        capacities.packaging,
+        (max_demand.chicken, max_demand.beef, max_demand.seafood),
+        (margins.chicken, margins.beef, margins.seafood),
     )
     chicken, beef, seafood = (int(round(value)) for value in quantities)
     usage = calculate_usage(chicken, beef, seafood)
