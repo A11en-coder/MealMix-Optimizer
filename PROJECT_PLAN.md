@@ -65,7 +65,8 @@ React/TypeScript browser UI, a FastAPI Python server, RSOME modeling, and its Gu
 | 2 | Edit weekly resource capacities | Step 7 — Verify, review, and consolidate | React form and validated FastAPI request implemented; solver uses entered capacities; backend tests and client lint/type checks pass; browser flow confirmed by Allen |
 | 2b | Edit maximum demand for each meal | Step 7 — Verify, review, and consolidate | React form, validated request, and dynamic solver constraints implemented; seven backend tests and client lint/type checks pass; browser cases confirmed by Allen |
 | 2c | Edit contribution margin for each meal | Step 7 — Verify, review, and consolidate | React form, validated request, and dynamic RSOME objective implemented; nine backend tests and client lint/type checks pass; browser check pending |
-| 2d | Edit per-meal resource use; handle minimum orders and infeasible scenarios | Step 1 — Define the feature | Planned |
+| 2d | Add minimum weekly orders and handle infeasible scenarios | Step 7 — Verify, review, and consolidate | React form, request validation, solver minimum constraints, and infeasible response implemented; 12 backend tests and client lint/type checks pass; browser check pending |
+| 2e | Edit per-meal resource use | Step 1 — Define the feature | Planned |
 | 3 | Save and reopen scenarios | Step 1 — Define the feature | Planned |
 | 4 | Review full app, usability, and one known-optimum test | Phase 5 | Planned |
 
@@ -76,3 +77,5 @@ Phase 2 behavior brief drafted on 2026-11-07. Allen selected chicken, beef, and 
 2026-11-08 update: Allen confirmed the browser cases for default demand, seafood cap 10, and invalid demand. Next: define editable contribution margins, then design their request and result behavior before implementation.
 
 2026-11-08 update: Editable nonnegative whole-dollar margins are implemented in React, FastAPI, and the RSOME objective. Nine backend tests pass, including seafood margin  -> 42 chicken, 40 beef, 0 seafood, ; client lint and TypeScript pass. Next: Allen checks defaults, seafood margin , and invalid margin in the browser. Per-meal time coefficients, minimum orders, and saved scenarios remain planned.
+
+2026-11-09 update: Minimum weekly orders are now entered in the React form and sent as `minDemand`. Pydantic rejects negative or fractional minimums and minimums above maximum demand before the solver runs. The RSOME model applies the lower bounds. Gurobi runs with `DualReductions=0` so an infeasible model has a distinct status; the API returns `status: infeasible` with an explanation and no quantities. Twelve backend tests pass, including minimum-over-maximum rejection, a feasible minimum, and a capacity-driven infeasible scenario. Client lint and TypeScript checks pass. The RSOME warning in the infeasible test is expected because it warns whenever no optimum exists. Next: Allen checks the default plan, beef minimum 41 against maximum 40, and prep capacity 0 with beef minimum 1 in the browser. Editable per-meal resource use and saved scenarios remain planned.

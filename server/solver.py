@@ -1,5 +1,6 @@
 from rsome import ro
 from rsome import grb_solver as grb
+from gurobipy import GRB
 
 MARGINS = (5, 7, 8)
 PREP_MINUTES = (6, 8, 7)
@@ -14,6 +15,7 @@ def solve_sample(
     packaging_capacity=240,
     max_demand=MAX_DEMAND,
     margins=MARGINS,
+    min_demand=(0, 0, 0),
 ):
     # initialize the model
     model = ro.Model()
@@ -33,10 +35,19 @@ def solve_sample(
     model.st(meals[0] <= max_demand[0])  # chicken
     model.st(meals[1] <= max_demand[1])  # beef
     model.st(meals[2] <= max_demand[2])  # seafood
+    model.st(meals[0] >= min_demand[0])  # chicken
+    model.st(meals[1] >= min_demand[1])  # beef
+    model.st(meals[2] >= min_demand[2])  # seafood
     model.st(meals >= 0)
 
     # solve the model using Gurobi
-    model.solve(grb)
+    model.solve(grb, display=False, params={"DualReductions": 0})
+    if model.solution is None:
+        raise RuntimeError("The solver did not return a result.")
+    if model.solution.status == GRB.INFEASIBLE:
+        return None
+    if model.solution.status != GRB.OPTIMAL:
+        raise RuntimeError(f"The solver stopped with status {model.solution.status}.")
 
     return meals.get(), model.get()
 

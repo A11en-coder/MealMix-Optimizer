@@ -12,6 +12,7 @@ type MealKey = "chicken" | "beef" | "seafood";
 function App() {
   // define the meal plan data structure
   type MealPlan = {
+    status: "optimal";
     quantities: {
       chicken: number;
       beef: number;
@@ -28,6 +29,7 @@ function App() {
   // create a state variable to hold the meal plan data
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [infeasibleMessage, setInfeasibleMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [capacityInputs, setCapacityInputs] = useState<Record<CapacityKey, string>>({
     prep: "600",
@@ -38,6 +40,11 @@ function App() {
     chicken: "50",
     beef: "40",
     seafood: "30",
+  });
+  const [minimumInputs, setMinimumInputs] = useState<Record<MealKey, string>>({
+    chicken: "0",
+    beef: "0",
+    seafood: "0",
   });
   const [marginInputs, setMarginInputs] = useState<Record<MealKey, string>>({
     chicken: "5",
@@ -51,6 +58,9 @@ function App() {
   const updateDemand = (key: MealKey, value: string) => {
     setDemandInputs((current) => ({ ...current, [key]: value }));
   };
+  const updateMinimum = (key: MealKey, value: string) => {
+    setMinimumInputs((current) => ({ ...current, [key]: value }));
+  };
   const updateMargin = (key: MealKey, value: string) => {
     setMarginInputs((current) => ({ ...current, [key]: value }));
   };
@@ -60,14 +70,16 @@ function App() {
     event.preventDefault();
     if (isLoading) return;
     setError(null);
+    setInfeasibleMessage(null);
     const values = [
       ...Object.values(capacityInputs),
       ...Object.values(demandInputs),
+      ...Object.values(minimumInputs),
       ...Object.values(marginInputs),
     ];
     if (values.some((value) => !/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) {
       setMealPlan(null);
-      setError("Enter a nonnegative whole number for every capacity, demand limit, and margin.");
+      setError("Enter a nonnegative whole number for every capacity, order limit, and margin.");
       return;
     }
 
@@ -81,6 +93,18 @@ function App() {
       beef: Number(demandInputs.beef),
       seafood: Number(demandInputs.seafood),
     };
+    const minDemand = {
+      chicken: Number(minimumInputs.chicken),
+      beef: Number(minimumInputs.beef),
+      seafood: Number(minimumInputs.seafood),
+    };
+    if ((["chicken", "beef", "seafood"] as const).some(
+      (meal) => minDemand[meal] > maxDemand[meal],
+    )) {
+      setMealPlan(null);
+      setError("A minimum order cannot exceed that meal's maximum demand.");
+      return;
+    }
     const margins = {
       chicken: Number(marginInputs.chicken),
       beef: Number(marginInputs.beef),
@@ -92,14 +116,19 @@ function App() {
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ capacities, maxDemand, margins }),
+        body: JSON.stringify({ capacities, maxDemand, minDemand, margins }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      setMealPlan(data);
-      console.log("Meal plan data:", data);
+      const data = (await response.json()) as
+        | MealPlan
+        | { status: "infeasible"; message: string };
+      if (data.status === "infeasible") {
+        setInfeasibleMessage(data.message);
+      } else {
+        setMealPlan(data);
+      }
     } catch (error) {
       setMealPlan(null);
       setError("Failed to fetch meal plan. Please try again.");
@@ -174,6 +203,36 @@ function App() {
           />
         </fieldset>
         <fieldset>
+          <legend>Minimum weekly orders (meals)</legend>
+          <label htmlFor="chicken-minimum">Chicken</label>
+          <input
+            id="chicken-minimum"
+            type="number"
+            min="0"
+            step="1"
+            value={minimumInputs.chicken}
+            onChange={(event) => updateMinimum("chicken", event.target.value)}
+          />
+          <label htmlFor="beef-minimum">Beef</label>
+          <input
+            id="beef-minimum"
+            type="number"
+            min="0"
+            step="1"
+            value={minimumInputs.beef}
+            onChange={(event) => updateMinimum("beef", event.target.value)}
+          />
+          <label htmlFor="seafood-minimum">Seafood</label>
+          <input
+            id="seafood-minimum"
+            type="number"
+            min="0"
+            step="1"
+            value={minimumInputs.seafood}
+            onChange={(event) => updateMinimum("seafood", event.target.value)}
+          />
+        </fieldset>
+        <fieldset>
           <legend>Contribution margin per meal ($)</legend>
           <label htmlFor="chicken-margin">Chicken</label>
           <input
@@ -220,6 +279,12 @@ function App() {
           <p>Cooking: {mealPlan.resources.cooking.used} / {mealPlan.resources.cooking.available} minutes</p>
           <p>Packaging: {mealPlan.resources.packaging.used} / {mealPlan.resources.packaging.available} minutes</p>
         </div>
+      )}
+      {infeasibleMessage && (
+        <section role="status">
+          <h2>No feasible plan</h2>
+          <p>{infeasibleMessage}</p>
+        </section>
       )}
       {error && <p role="alert">{error}</p>}
     </>
