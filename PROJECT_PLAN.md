@@ -67,8 +67,8 @@ React/TypeScript browser UI, a FastAPI Python server, RSOME modeling, and its Gu
 | 2c | Edit contribution margin for each meal | Step 7 — Verify, review, and consolidate | React form, validated request, and dynamic RSOME objective implemented; nine backend tests and client lint/type checks pass; browser check pending |
 | 2d | Add minimum weekly orders and handle infeasible scenarios | Step 7 — Verify, review, and consolidate | Verified: 12 backend tests and client lint/type checks pass; Allen confirmed infeasible, minimum-over-maximum, and original-default-result browser cases |
 | 2e | Edit per-meal resource use | Step 7 — Verify, review, and consolidate | Verified: nine React inputs and request payload, server validation, dynamic constraints, and response usage; 17 server tests and client lint/type checks pass; Allen confirmed changed-coefficient result and invalid-minute browser error |
-| 3 | Save and reopen scenarios | Step 7 — Verify, review, and consolidate | Named scenarios save all five input groups in browser localStorage; valid save clears the form, duplicate names are rejected, and saved scenarios reopen after refresh; client lint and build pass; browser verification pending |
-| 4 | Review full app, usability, and one known-optimum test | Phase 5 | Planned |
+| 3 | Save and reopen scenarios | Step 7 — Verify, review, and consolidate | Verified: client lint and build pass; Allen confirmed save/clear/refresh/reopen, duplicate-name rejection, and generation from restored inputs in browser |
+| 4 | Review full app, usability, and one known-optimum test | Phase 5 | In progress; review main workflows and interaction between features |
 
 ## Checkpoints and next task
 
@@ -101,3 +101,11 @@ Phase 2 behavior brief drafted on 2026-11-07. Allen selected chicken, beef, and 
 2026-11-09 browser checkpoint: Allen confirmed that a blank chicken prep minute input shows a validation error and no meal plan. Feature 2e is verified. Next: Step 1 for saving and reopening named scenarios locally; define what is saved and what happens when a scenario is reopened.
 
 2026-11-09 saved-scenario feature: Allen specified local browser storage for capacities, maximum demand, minimum orders, margins, and per-meal minutes. A valid named save must clear the current form and show the scenario in a list that survives refresh. Reopening restores the inputs, then the planner can run optimization. Empty names, invalid inputs, and duplicate names are rejected; persistence to a server is not applicable to this local version. Implemented in `App.tsx` using a versioned localStorage key and shape checks when reading saved data. Storage-write failure leaves the current form intact and displays an error. Client lint and production build pass. Next: browser verification of save, clear, refresh, reopen, and duplicate-name rejection; then check the restored scenario's optimization result.
+
+2026-11-09 browser checkpoint: Allen confirmed that saving a scenario clears the form, the saved item appears, and it survives refresh and reopens with its inputs. Next: try saving a second scenario with the same name and verify the duplicate error without losing the existing item; then generate a result from a reopened scenario.
+
+2026-11-09 browser checkpoint: Allen confirmed that a duplicate scenario name is rejected while the original saved item remains available and current inputs remain intact. Next: reopen a known scenario and generate a meal plan to verify its stored inputs reach the solver and produce the expected result.
+
+2026-11-09 browser checkpoint: Allen confirmed that a reopened scenario generates the expected meal plan from its restored inputs. Saved-scenario feature is verified. Phase 5 review began. First finding (must fix before completion): after generating a plan, editing any input leaves the old result visible while the form shows new values. In `App.tsx`, input change handlers update form state but do not invalidate `mealPlan` or the infeasible message.
+
+2026-11-09 review fix: All five optimization input change handlers now call `invalidateResult`, clearing the old plan, infeasible state, and stale feedback. An input-version check also prevents a pending API response from displaying a result calculated before a user edit. Client lint and production build pass. Next: verify in the browser that an existing result disappears immediately after editing any input and only returns after a new solve.

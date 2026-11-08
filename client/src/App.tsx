@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import "./App.css";
 
 type ResourceUsage = {
@@ -83,6 +83,7 @@ function App() {
   const [scenarioName, setScenarioName] = useState("");
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>(readSavedScenarios);
   const [scenarioMessage, setScenarioMessage] = useState<string | null>(null);
+  const inputVersion = useRef(0);
   const [capacityInputs, setCapacityInputs] = useState<Record<ResourceKey, string>>({
     prep: "600",
     cooking: "900",
@@ -109,19 +110,32 @@ function App() {
     seafood: { prep: "7", cooking: "8", packaging: "3" },
   });
 
+  const invalidateResult = () => {
+    inputVersion.current += 1;
+    setMealPlan(null);
+    setInfeasibleMessage(null);
+    setError(null);
+    setScenarioMessage(null);
+  };
+
   const updateCapacity = (key: ResourceKey, value: string) => {
+    invalidateResult();
     setCapacityInputs((current) => ({ ...current, [key]: value }));
   };
   const updateDemand = (key: MealKey, value: string) => {
+    invalidateResult();
     setDemandInputs((current) => ({ ...current, [key]: value }));
   };
   const updateMinimum = (key: MealKey, value: string) => {
+    invalidateResult();
     setMinimumInputs((current) => ({ ...current, [key]: value }));
   };
   const updateMargin = (key: MealKey, value: string) => {
+    invalidateResult();
     setMarginInputs((current) => ({ ...current, [key]: value }));
   };
   const updateResourceMinute = (meal: MealKey, resource: ResourceKey, value: string) => {
+    invalidateResult();
     setResourceMinuteInputs((current) => ({
       ...current,
       [meal]: { ...current[meal], [resource]: value },
@@ -268,6 +282,7 @@ function App() {
     };
     setMealPlan(null);
     setIsLoading(true);
+    const requestInputVersion = inputVersion.current;
     try {
       const response = await fetch("/api/optimize", {
         method: "POST",
@@ -280,15 +295,18 @@ function App() {
       const data = (await response.json()) as
         | MealPlan
         | { status: "infeasible"; message: string };
+      if (inputVersion.current !== requestInputVersion) return;
       if (data.status === "infeasible") {
         setInfeasibleMessage(data.message);
       } else {
         setMealPlan(data);
       }
     } catch (error) {
-      setMealPlan(null);
-      setError("Failed to fetch meal plan. Please try again.");
-      console.error("Error fetching meal plan:", error);
+      if (inputVersion.current === requestInputVersion) {
+        setMealPlan(null);
+        setError("Failed to fetch meal plan. Please try again.");
+        console.error("Error fetching meal plan:", error);
+      }
     } finally {
       setIsLoading(false);
     }
