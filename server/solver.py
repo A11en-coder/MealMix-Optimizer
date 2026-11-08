@@ -1,8 +1,14 @@
 from rsome import ro
 from rsome import grb_solver as grb
 
+MARGINS = (5, 7, 8)
+PREP_MINUTES = (6, 8, 7)
+COOKING_MINUTES = (10, 12, 8)
+PACKAGING_MINUTES = (2, 2, 3)
+MAX_DEMAND = (50, 40, 30)
+
 # defines a function to solve the optimization problem using Gurobi
-def solve_sample():
+def solve_sample(prep_capacity=600, cooking_capacity=900, packaging_capacity=240):
     # initialize the model
     model = ro.Model()
 
@@ -10,17 +16,17 @@ def solve_sample():
     meals = model.dvar(3, vtype = "I", name = "meals")
 
     # set the objective function to maximize the profit margin
-    model.max(5 * meals[0] + 7 * meals[1] + 8 * meals[2])
+    model.max(sum(MARGINS[i] * meals[i] for i in range(3)))
 
     # add the constraints for preparation, cooking, and packaging time
-    model.st(6 * meals[0] + 8 * meals[1] + 7 * meals[2] <= 600)   # prep
-    model.st(10 * meals[0] + 12 * meals[1] + 8 * meals[2] <= 900) # cooking
-    model.st(2 * meals[0] + 2 * meals[1] + 3 * meals[2] <= 240)   # packaging
+    model.st(sum(PREP_MINUTES[i] * meals[i] for i in range(3)) <= prep_capacity)
+    model.st(sum(COOKING_MINUTES[i] * meals[i] for i in range(3)) <= cooking_capacity)
+    model.st(sum(PACKAGING_MINUTES[i] * meals[i] for i in range(3)) <= packaging_capacity)
 
     # add the constraints for the maximum number of meals that can be produced
-    model.st(meals[0] <= 50)  # chicken
-    model.st(meals[1] <= 40)  # beef
-    model.st(meals[2] <= 30)  # seafood
+    model.st(meals[0] <= MAX_DEMAND[0])  # chicken
+    model.st(meals[1] <= MAX_DEMAND[1])  # beef
+    model.st(meals[2] <= MAX_DEMAND[2])  # seafood
     model.st(meals >= 0)
 
     # solve the model using Gurobi
@@ -30,9 +36,10 @@ def solve_sample():
 
 def calculate_usage(chicken, beef, seafood):
     # calculate the total preparation, cooking, and packaging time used
-    prep_time = 6 * chicken + 8 * beef + 7 * seafood
-    cook_time = 10 * chicken + 12 * beef + 8 * seafood
-    pack_time = 2 * chicken + 2 * beef + 3 * seafood
+    quantities = (chicken, beef, seafood)
+    prep_time = sum(PREP_MINUTES[i] * quantities[i] for i in range(3))
+    cook_time = sum(COOKING_MINUTES[i] * quantities[i] for i in range(3))
+    pack_time = sum(PACKAGING_MINUTES[i] * quantities[i] for i in range(3))
 
     return {
         "prepTime": prep_time,

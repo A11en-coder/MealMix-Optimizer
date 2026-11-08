@@ -1,13 +1,25 @@
 from fastapi import FastAPI
+from pydantic import BaseModel, Field
 from solver import solve_sample, calculate_usage
 
 app = FastAPI()
 
-# optimizer endpoint check
-@app.post("/api/optimize")
-def optimize():
+class Capacities(BaseModel):
+    prep: int = Field(ge=0, strict=True)
+    cooking: int = Field(ge=0, strict=True)
+    packaging: int = Field(ge=0, strict=True)
 
-    quantities, total_margin = solve_sample()
+
+class OptimizeRequest(BaseModel):
+    capacities: Capacities
+
+
+@app.post("/api/optimize")
+def optimize(request: OptimizeRequest):
+    capacities = request.capacities
+    quantities, total_margin = solve_sample(
+        capacities.prep, capacities.cooking, capacities.packaging
+    )
     chicken, beef, seafood = (int(round(value)) for value in quantities)
     usage = calculate_usage(chicken, beef, seafood)
 
@@ -18,11 +30,11 @@ def optimize():
             "beef": beef,
             "seafood": seafood,
         },
-        "totalMargin": total_margin,
+        "totalMargin": float(total_margin),
         "resources": {
-            "prep": {"used": usage["prepTime"], "available": 600},
-            "cooking": {"used": usage["cookTime"], "available": 900},
-            "packaging": {"used": usage["packTime"], "available": 240},
+            "prep": {"used": usage["prepTime"], "available": capacities.prep},
+            "cooking": {"used": usage["cookTime"], "available": capacities.cooking},
+            "packaging": {"used": usage["packTime"], "available": capacities.packaging},
         },
     }
 
