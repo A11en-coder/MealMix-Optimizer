@@ -51,7 +51,7 @@ Translate user input into an integer linear model; handle infeasible solver resu
 
 Weekly capacities: prep 600 minutes; cooking line 900 minutes; packaging line 240 minutes. Decision variables are nonnegative integers. Maximize `5c + 7b + 8s` under the three resource inequalities and demand limits.
 
-Independent exhaustive enumeration of all bounded integer combinations found a unique optimum of **13 chicken, 39 beef, 30 seafood**, total margin **$578**. Resource use: prep **600/600**, cooking **838/900**, packaging **194/240** minutes. This is a planned test oracle, not evidence that application code exists.
+Independent exhaustive enumeration of all bounded integer combinations found a unique optimum of **13 chicken, 39 beef, 30 seafood**, total margin **$578**. Resource use: prep **600/600**, cooking **838/900**, packaging **194/240** minutes. This oracle is covered by a server test and was confirmed in the browser by Allen.
 
 ## Technical foundation — provisional
 
@@ -61,14 +61,14 @@ React/TypeScript browser UI, a FastAPI Python server, RSOME modeling, and its Gu
 
 | Order | Feature | Current cycle step | Status |
 | --- | --- | --- | --- |
-| 1 | Solve one predefined scenario and show a valid result | Step 7 — Verify, review, and consolidate | Model and endpoint implemented; Postman and browser quantity/margin paths reported working; error recovery confirmed; loading and resource display implemented; known-optimum pytest passed; final browser resource check pending |
+| 1 | Solve one predefined scenario and show a valid result | Step 7 — Verify, review, and consolidate | Verified: Postman and browser flow, known-optimum test, error recovery, loading, and default quantities, margin, and all three resource-usage figures |
 | 2 | Edit weekly resource capacities | Step 7 — Verify, review, and consolidate | React form and validated FastAPI request implemented; solver uses entered capacities; backend tests and client lint/type checks pass; browser flow confirmed by Allen |
 | 2b | Edit maximum demand for each meal | Step 7 — Verify, review, and consolidate | React form, validated request, and dynamic solver constraints implemented; seven backend tests and client lint/type checks pass; browser cases confirmed by Allen |
-| 2c | Edit contribution margin for each meal | Step 7 — Verify, review, and consolidate | React form, validated request, and dynamic RSOME objective implemented; nine backend tests and client lint/type checks pass; browser check pending |
+| 2c | Edit contribution margin for each meal | Step 7 — Verify, review, and consolidate | Verified: React form, validated request, and dynamic RSOME objective; backend and client checks pass; Allen confirmed seafood margin $1 gives 42 chicken, 40 beef, 0 seafood, $490 in browser |
 | 2d | Add minimum weekly orders and handle infeasible scenarios | Step 7 — Verify, review, and consolidate | Verified: 12 backend tests and client lint/type checks pass; Allen confirmed infeasible, minimum-over-maximum, and original-default-result browser cases |
 | 2e | Edit per-meal resource use | Step 7 — Verify, review, and consolidate | Verified: nine React inputs and request payload, server validation, dynamic constraints, and response usage; 17 server tests and client lint/type checks pass; Allen confirmed changed-coefficient result and invalid-minute browser error |
 | 3 | Save and reopen scenarios | Step 7 — Verify, review, and consolidate | Verified: client lint and build pass; Allen confirmed save/clear/refresh/reopen, duplicate-name rejection, and generation from restored inputs in browser |
-| 4 | Review full app, usability, and one known-optimum test | Phase 5 | In progress; review main workflows and interaction between features |
+| 4 | Review full app, usability, and one known-optimum test | Phase 5 | Complete locally: 17 server tests, client lint/build, and browser checks for defaults, edited inputs, validation, infeasibility, saved scenarios, and stale-result clearing |
 
 ## Checkpoints and next task
 
@@ -108,4 +108,8 @@ Phase 2 behavior brief drafted on 2026-11-07. Allen selected chicken, beef, and 
 
 2026-11-09 browser checkpoint: Allen confirmed that a reopened scenario generates the expected meal plan from its restored inputs. Saved-scenario feature is verified. Phase 5 review began. First finding (must fix before completion): after generating a plan, editing any input leaves the old result visible while the form shows new values. In `App.tsx`, input change handlers update form state but do not invalidate `mealPlan` or the infeasible message.
 
-2026-11-09 review fix: All five optimization input change handlers now call `invalidateResult`, clearing the old plan, infeasible state, and stale feedback. An input-version check also prevents a pending API response from displaying a result calculated before a user edit. Client lint and production build pass. Next: verify in the browser that an existing result disappears immediately after editing any input and only returns after a new solve.
+2026-11-09 review fix: All five optimization input change handlers now call `invalidateResult`, clearing the old plan, infeasible state, and stale feedback. An input-version check also prevents a pending API response from displaying a result calculated before a user edit. Client lint and production build pass. Allen confirmed in the browser that editing an input hides the old result until a new solve. Full review reran the server suite: 17 tests pass with the expected RSOME infeasible warning. Next: complete the remaining browser checks for editable margins and default resource usage before closing the project. Defer: remove unused Vite starter CSS and improve placement of generic form errors during later UI polish; Allen prefers the first working version over further component splitting.
+
+2026-11-09 browser checkpoint: Allen confirmed that changing seafood margin to $1 yields 42 chicken, 40 beef, 0 seafood and $490. Editable-margin feature is verified. Final review check: with all defaults restored, confirm quantities, total margin, and all three displayed resource-usage figures against the known optimum.
+
+2026-11-09 completion: Allen confirmed the default plan of 13 chicken, 39 beef, 30 seafood, $578 margin, and resource usage of prep 600/600, cooking 838/900, and packaging 194/240 minutes. The local first version is complete. Server suite: 17 passed, with the expected RSOME warning for an infeasible model. Client lint and production build pass. Browser checks covered edited capacities, maximum demand, margins, per-meal minutes, minimum-order infeasibility, invalid inputs, save/clear/refresh/reopen, duplicate-name rejection, restored optimization, and stale-result clearing. Deferred: deploy, improve placement of generic form errors, remove unused starter CSS, optional saved-scenario management such as deletion, and component splitting when a concrete maintenance need appears. No shared accounts or real business data are in scope.
