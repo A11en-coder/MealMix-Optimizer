@@ -1,0 +1,19 @@
+# Python
+server/.venv/
+**/__pycache__/
+**/.pytest_cache/
+*.py[cod]
+
+# Client
+client/node_modules/
+client/dist/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
